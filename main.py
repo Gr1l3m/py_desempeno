@@ -1,5 +1,7 @@
 import math
 from scipy.interpolate import interp1d
+from numpy import linspace
+import matplotlib.pyplot as plt
 
 
 class Performance:
@@ -20,6 +22,9 @@ class Performance:
         self.s1r = s1r
         self.scr = scr
         self.io = io
+        self.t = linspace(0, self.last_period, int(self.last_period/self.interval))
+        self.design_spectrum = None
+        self.performance_spectrum = None
 
         fa = 1
         fv = 1
@@ -67,12 +72,13 @@ class Performance:
 
         print(self.performance_curve)
 
-        # self.design_spectrum = list(self.complete_spectrum())
+    def plot_design_spectrum(self):
+        self.design_spectrum = [self.spectrum_point(x, self.kd) for x in self.t]
+        return self.design_spectrum
 
-    # def complete_spectrum(self):
-    #     t = 0
-    #     while t < self.last_period:
-    #         yield self.spectrum_point(t)
+    def plot_performance_spectrum(self):
+        self.performance_spectrum = [self.spectrum_point(x, self.kd_performance) for x in self.t]
+        return self.performance_spectrum
 
     def spectrum_point(self, t, kd):
         scd = self.scs * kd
@@ -156,6 +162,9 @@ class Performance:
 if __name__ == '__main__':
     # Chinautla - Suelo tipo D
     # Estructura Ordinaria, Concreto reforzado DL
-    espectro_test = Performance(4.1, 1.43, 0.89, 3.48, 0.66, 0.8, 12.8, 0.049, 0.75, 4, 3, 2.5, 0.01, last_period=6)
-    print(espectro_test.spectrum_point(6, 0.66))
-    print(espectro_test.spectrum_point(6, 0.8))
+    espectro_test = Performance(4.1, 1.43, 0.89, 3.48, 0.66, 0.8, 12.8, 0.049, 0.75, 4, 3, 2.5, 0.01, last_period=5)
+    print(espectro_test.plot_design_spectrum())
+
+    plt.plot(*zip(*espectro_test.plot_performance_spectrum()), 'b')
+    plt.plot(*zip(*espectro_test.plot_design_spectrum()), 'r')
+    plt.show()
