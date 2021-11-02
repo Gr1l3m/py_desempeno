@@ -1,6 +1,6 @@
 import math
 from scipy.interpolate import interp1d
-from numpy import linspace
+from numpy import linspace, array
 import matplotlib.pyplot as plt
 
 
@@ -22,9 +22,14 @@ class Performance:
         self.s1r = s1r
         self.scr = scr
         self.io = io
-        self.t = linspace(0, self.last_period, int(self.last_period/self.interval))
+        self.t = list(linspace(0, self.last_period, int(self.last_period/self.interval)))
+        self.w = [2 * math.pi / t if t > 0 else 0 for t in self.t]
         self.design_spectrum = None
         self.performance_spectrum = None
+        self.performance_spectrum_cm_s2 = None
+        self.capacity_spectrum = None
+        self.pseudo_velocity_spectrum = None
+        self.pseudo_displacement_spectrum = None
 
         fa = 1
         fv = 1
@@ -71,6 +76,8 @@ class Performance:
                                   [self.sa_u, self.sd_u]]
 
         print(self.performance_curve)
+        print(self.t)
+        print(self.w)
 
     def plot_design_spectrum(self):
         self.design_spectrum = [self.spectrum_point(x, self.kd) for x in self.t]
@@ -80,7 +87,19 @@ class Performance:
         self.performance_spectrum = [self.spectrum_point(x, self.kd_performance) for x in self.t]
         return self.performance_spectrum
 
-    def spectrum_point(self, t, kd):
+    def plot_capacity_spectrum(self):
+        self.capacity_spectrum = [self.spectrum_point(x, self.kd_performance, self.beta_d) for x in self.t]
+        return self.capacity_spectrum
+
+    def pseudo_velocity_calculator(self):
+        result = [[x[0][0], x[0][1] * 980 / x[1]] if x[1] != 0 else [0, 0] for x in zip(self.capacity_spectrum, self.w)]
+        return result
+
+    def plot_pseudo_displacement_spectrum(self):
+        result = [[x[0][0], x[0][1] * 980 / (x[1]**2)] if x[1] != 0 else [0, 0] for x in zip(self.capacity_spectrum, self.w)]
+        return result
+
+    def spectrum_point(self, t, kd, beta_d=1):
         scd = self.scs * kd
         s1d = self.s1s * kd
 
@@ -92,8 +111,7 @@ class Performance:
             sa = min(s1d / t, scd)
         else:
             sa = (s1d / (t ** 2)) * self.tl
-        t += self.interval
-        return [t, sa]
+        return [t, sa/beta_d]
 
     def beta_d_finder(self, beta_effective):
         # sourcery skip: inline-immediately-returned-variable
@@ -167,4 +185,9 @@ if __name__ == '__main__':
 
     plt.plot(*zip(*espectro_test.plot_performance_spectrum()), 'b')
     plt.plot(*zip(*espectro_test.plot_design_spectrum()), 'r')
+    plt.plot(*zip(*espectro_test.plot_capacity_spectrum()), 'g')
     plt.show()
+
+    # plt.plot(*zip(*espectro_test.plot_pseudo_velocity_spectrum()), 'g')
+    # print(espectro_test.plot_pseudo_velocity_spectrum())
+    # print(espectro_test.plot_pseudo_displacement_spectrum())
